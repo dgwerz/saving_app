@@ -149,6 +149,8 @@ body{
 .deposit input{flex:1;border:1px solid var(--line);border-radius:10px;padding:9px 12px;
   font-family:'Inter';font-size:14px;outline:none;}
 .deposit input:focus{border-color:var(--violet);}
+.deposit input{text-align:center;}
+.deposit .dep-btn{flex:0 0 auto;width:46px;padding:9px 0;font-size:20px;line-height:1;text-align:center;}
 
 .done-note{font-size:13.5px;color:var(--muted);background:var(--bg);padding:12px 14px;border-radius:12px;line-height:1.5;}
 
@@ -433,8 +435,9 @@ body{
             'style="--val:'+((Math.min(g.rate,sl.max)/sl.max)*100)+'%" />'+
         '</div>'+
         '<div class="deposit">'+
-          '<input type="number" placeholder="Add a deposit" data-deposit aria-label="Deposit amount" />'+
-          '<button class="btn btn-ghost" data-addbtn>Add</button>'+
+          '<button class="btn btn-ghost dep-btn" data-subbtn aria-label="Subtract from savings">−</button>'+
+          '<input type="number" placeholder="Amount" data-deposit aria-label="Deposit or withdrawal amount" />'+
+          '<button class="btn btn-primary dep-btn" data-addbtn aria-label="Add to savings">+</button>'+
         '</div>'+
       '</div>';
     } else {
@@ -559,24 +562,28 @@ body{
     });
 
     var addBtn=card.querySelector("[data-addbtn]");
+    var subBtn=card.querySelector("[data-subbtn]");
     var depInput=card.querySelector("[data-deposit]");
-    function doDeposit(){
-      var v=parseFloat(depInput.value);
-      if(!isNaN(v) && v!==0){
-        var before=g.saved>=g.target;
-        g.saved=Math.max(0,g.saved+v);
-        depInput.value="";
-        saveGoals(); renderSummary(); refreshCard(g);
-        var nowReached=g.saved>=g.target;
-        if(nowReached && !before){
-          showToast("🎉 "+g.name+" reached — incredible!");
-        } else if(v>0){
-          showToast(money(v)+" added · "+DEPOSIT_PHRASES[Math.floor(Math.random()*DEPOSIT_PHRASES.length)]);
-        }
+    function doDeposit(sign){
+      var raw=parseFloat(depInput.value);
+      if(isNaN(raw) || raw===0) return;
+      var v=Math.abs(raw)*sign;
+      var before=g.saved>=g.target;
+      g.saved=Math.max(0,g.saved+v);
+      depInput.value="";
+      saveGoals(); renderSummary(); refreshCard(g);
+      var nowReached=g.saved>=g.target;
+      if(nowReached && !before){
+        showToast("🎉 "+g.name+" reached — incredible!");
+      } else if(v>0){
+        showToast(money(v)+" added · "+DEPOSIT_PHRASES[Math.floor(Math.random()*DEPOSIT_PHRASES.length)]);
+      } else {
+        showToast(money(Math.abs(v))+" removed");
       }
     }
-    if(addBtn) addBtn.onclick=doDeposit;
-    if(depInput) depInput.addEventListener("keydown",function(e){ if(e.key==="Enter") doDeposit(); });
+    if(addBtn) addBtn.onclick=function(){doDeposit(1);};
+    if(subBtn) subBtn.onclick=function(){doDeposit(-1);};
+    if(depInput) depInput.addEventListener("keydown",function(e){ if(e.key==="Enter") doDeposit(1); });
 
     card.querySelector("[data-edit]").onclick=function(){openForm(g);};
     card.querySelector("[data-del]").onclick=function(){confirmDelete(g,card);};
